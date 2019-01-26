@@ -10,7 +10,19 @@ struct IndexPair
     int y;
     IndexPair(int _x, int _y) : x(_x), y(_y) {}
     IndexPair() {}
+    bool operator == (IndexPair &v1);
 };
+
+bool
+IndexPair::operator == (IndexPair &v1)
+{
+    if (this->x == v1.x && this->y == v1.y)
+    {
+        return true;
+    }
+    else
+        return false;
+}
 
 vector<vector<char>>
 ReadMap(const string &filename)
@@ -98,11 +110,37 @@ GetWaterSquare(vector<vector<char>> &map, vector<vector<char>> &checked, IndexPa
     }
 }
 
+void CreatePond(vector<vector<char>> &map, vector<vector<char>> &checked, vector<IndexPair> &pond, IndexPair cell)
+{
+    int height = map.size();
+    int width = map[0].size();
+    
+    if (CheckOneCell(map, checked, cell))
+    {
+        pond.push_back(cell);
+        if ((cell.x + 1) < height)
+        {
+            CreatePond(map, checked, pond, IndexPair(cell.x + 1, cell.y));
+        }
+        if ((cell.y + 1) < width)
+        {
+            CreatePond(map, checked, pond, IndexPair(cell.x, cell.y + 1));
+        }
+        if ((cell.x - 1) >= 0)
+        {
+            CreatePond(map, checked, pond, IndexPair(cell.x - 1, cell.y));
+        }
+        if ((cell.y - 1) >= 0)
+        {
+            CreatePond(map, checked, pond, IndexPair(cell.x, cell.y - 1));
+        }
+    }
+}
+
 int main() 
 {
-    vector<vector<char>> map = ReadMap("./tests/test3.txt");
-    DebugPrint(map);
-
+    vector<vector<char>> map = ReadMap("./tests/test2.txt");
+    //DebugPrint(map);
     int checkpointCount;
     cout << "Enter number of checkpoints: ";
     cin >> checkpointCount; cin.ignore();
@@ -122,12 +160,30 @@ int main()
             *jt = 'n';
         }
     }
-    
-    for (auto it = checkpoints.begin(); it != checkpoints.end(); it++)
+    vector<vector<IndexPair>> ponds;
+    for (int i = 0; i < map.size(); i++)
     {
-        cout << GetWaterSquare(map, checked, *it) << endl;
+        for (int j = 0; j < map[i].size(); j++)
+        {
+            if (map[i][j] == 'O')
+            {
+                vector<IndexPair> pond;
+                CreatePond(map, checked, pond, IndexPair(i, j));
+                if (!pond.empty())
+                    ponds.push_back(pond);
+            }
+        }
+    }
+
+    for (auto it = ponds.begin(); it != ponds.end(); it++) 
+    {
+        cout << "Pond" << endl << "================" << endl;
+        for (auto jt = it->begin(); jt != it->end(); jt++)
+        {
+            cout << jt->x << " " << jt->y << endl;
+        }
     }
     
-    DebugPrint(checked);
+    //DebugPrint(checked);
     return 0;
 }
