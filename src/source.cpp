@@ -25,7 +25,7 @@ IndexPair::operator == (IndexPair &v1)
 }
 
 vector<vector<char>>
-ReadMap(const string &filename)
+ReadFile(char* filename, vector<IndexPair> &checkpoints)
 {
     int width, height;
     ifstream file(filename);
@@ -43,6 +43,19 @@ ReadMap(const string &filename)
         }
         result.push_back(buf);
     }
+
+    int checkpointsNum;
+    file >> checkpointsNum;
+
+    for (int i = 0; i < checkpointsNum; i++)
+    {
+        int x, y;
+        file >> y >> x;
+        checkpoints.push_back(IndexPair(x, y));
+    }
+
+    file.close();
+
     return result;
 }
 
@@ -74,40 +87,7 @@ CheckOneCell(vector<vector<char>> &map, vector<vector<char>> &checked, IndexPair
         {
             return false;
         }
-    }
-}
-
-int
-GetWaterSquare(vector<vector<char>> &map, vector<vector<char>> &checked, IndexPair cell)
-{
-    int square = 0;
-    int height = map.size();
-    int width = map[0].size();
-    if (!CheckOneCell(map, checked, cell))
-    {
-        return square;
-    }
-    else
-    {
-        square++;
-        if ( (cell.x + 1) < height)
-        {
-            square += GetWaterSquare(map, checked, IndexPair(cell.x + 1, cell.y));
-        }
-        if ( (cell.y + 1) < width)
-        {
-            square += GetWaterSquare(map, checked, IndexPair(cell.x, cell.y + 1));
-        }
-        if ( (cell.x - 1) >= 0)
-        {
-            square += GetWaterSquare(map, checked, IndexPair(cell.x - 1, cell.y));
-        }
-        if ( (cell.y - 1) >= 0)
-        {
-            square += GetWaterSquare(map, checked, IndexPair(cell.x, cell.y - 1));
-        }
-        return square;
-    }
+    }    
 }
 
 void CreatePond(vector<vector<char>> &map, vector<vector<char>> &checked, vector<IndexPair> &pond, IndexPair cell)
@@ -122,14 +102,17 @@ void CreatePond(vector<vector<char>> &map, vector<vector<char>> &checked, vector
         {
             CreatePond(map, checked, pond, IndexPair(cell.x + 1, cell.y));
         }
+
         if ((cell.y + 1) < width)
         {
             CreatePond(map, checked, pond, IndexPair(cell.x, cell.y + 1));
         }
+
         if ((cell.x - 1) >= 0)
         {
             CreatePond(map, checked, pond, IndexPair(cell.x - 1, cell.y));
         }
+        
         if ((cell.y - 1) >= 0)
         {
             CreatePond(map, checked, pond, IndexPair(cell.x, cell.y - 1));
@@ -137,33 +120,13 @@ void CreatePond(vector<vector<char>> &map, vector<vector<char>> &checked, vector
     }
 }
 
-int main() 
+vector<vector<IndexPair>>
+FindAllPonds(vector<vector<char>> &map, vector<vector<char>> &checked)
 {
-    vector<vector<char>> map = ReadMap("./tests/test2.txt");
-    //DebugPrint(map);
-    int checkpointCount;
-    cout << "Enter number of checkpoints: ";
-    cin >> checkpointCount; cin.ignore();
-    vector<IndexPair> checkpoints(checkpointCount);
-
-    for (auto it = checkpoints.begin(); it != checkpoints.end(); it++)
-    {
-        cin >> it->x >> it->y;
-    }
-
-    vector<vector<char>> checked;
-    checked.assign(map.begin(), map.end());
-    for (auto it = checked.begin(); it != checked.end(); it++)
-    {
-        for (auto jt = it->begin(); jt != it->end(); jt++)
-        {
-            *jt = 'n';
-        }
-    }
     vector<vector<IndexPair>> ponds;
     for (int i = 0; i < map.size(); i++)
     {
-        for (int j = 0; j < map[i].size(); j++)
+        for (int j = 0; j < map[0].size(); j++)
         {
             if (map[i][j] == 'O')
             {
@@ -174,16 +137,47 @@ int main()
             }
         }
     }
+    return ponds;
+}
 
-    for (auto it = ponds.begin(); it != ponds.end(); it++) 
+int
+GetPondSizeAtPoint(vector<vector<IndexPair>> &ponds, IndexPair checkpoint)
+{
+    for (auto it = ponds.begin(); it != ponds.end(); it++)
     {
-        cout << "Pond" << endl << "================" << endl;
         for (auto jt = it->begin(); jt != it->end(); jt++)
         {
-            cout << jt->x << " " << jt->y << endl;
+            if (*jt == checkpoint)
+            {
+                return it->size();
+            }
+        }
+    }
+    return 0;
+}
+
+int main(int argc, char* argv[]) 
+{
+    vector<IndexPair> checkpoints;
+    vector<vector<char>> map = ReadFile(argv[1], checkpoints);
+    DebugPrint(map);
+
+    vector<vector<char>> checked;
+    checked.assign(map.begin(), map.end());
+    for (auto it = checked.begin(); it != checked.end(); it++)
+    {
+        for (auto jt = it->begin(); jt != it->end(); jt++)
+        {
+            *jt = 'n';
         }
     }
     
-    //DebugPrint(checked);
+    vector<vector<IndexPair>> ponds = FindAllPonds(map, checked);
+
+    for (auto it = checkpoints.begin(); it != checkpoints.end(); it++) 
+    {
+            cout << "Pond size at point (" << it->x << ":" << it->y << ") is " << GetPondSizeAtPoint(ponds, *it) << endl;
+    }
+    
     return 0;
 }
