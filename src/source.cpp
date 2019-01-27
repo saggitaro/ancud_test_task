@@ -4,17 +4,17 @@
 
 using namespace std;
 
-struct IndexPair 
+struct Point2i 
 {
     int x;
     int y;
-    IndexPair(int _x, int _y) : x(_x), y(_y) {}
-    IndexPair() {}
-    bool operator == (IndexPair &v1);
+    Point2i(int _x, int _y) : x(_x), y(_y) {}
+    Point2i() {}
+    bool operator == (Point2i &v1);
 };
 
 bool
-IndexPair::operator == (IndexPair &v1)
+Point2i::operator == (Point2i &v1)
 {
     if (this->x == v1.x && this->y == v1.y)
     {
@@ -24,8 +24,22 @@ IndexPair::operator == (IndexPair &v1)
         return false;
 }
 
+void
+PrintMap(vector<vector<char>> &map)
+{
+    for (auto it = map.begin(); it != map.end(); it++)
+    {
+        for (auto jt = it->begin(); jt != it->end(); jt++)
+        {
+            cout << *jt << " ";
+        }
+        cout << endl;
+    }
+    cout << "=================" << endl;
+}
+
 vector<vector<char>>
-ReadFile(char* filename, vector<IndexPair> &checkpoints)
+ReadFromFile(char* filename, vector<Point2i> &checkpoints)
 {
     int width, height;
     ifstream file(filename);
@@ -51,7 +65,7 @@ ReadFile(char* filename, vector<IndexPair> &checkpoints)
     {
         int x, y;
         file >> y >> x;
-        checkpoints.push_back(IndexPair(x, y));
+        checkpoints.push_back(Point2i(x, y));
     }
 
     file.close();
@@ -59,27 +73,13 @@ ReadFile(char* filename, vector<IndexPair> &checkpoints)
     return result;
 }
 
-void 
-DebugPrint(const vector<vector<char>> &map) 
-{
-    for (auto it = map.begin(); it != map.end(); it++)
-    {
-        for (auto jt = it->begin(); jt != it->end(); jt++)
-        {
-            cout << *jt << " ";
-        }
-        cout << endl;
-    }
-    cout << "===========" << endl;
-}
-
 bool
-CheckOneCell(vector<vector<char>> &map, vector<vector<char>> &checked, IndexPair cell)
+CheckPoint(vector<vector<char>> &map, vector<vector<char>> &checked, Point2i point)
 {
-    if (checked[cell.x][cell.y] != 'v')
+    if (checked[point.x][point.y] != 'v')
     {
-        checked[cell.x][cell.y] = 'v';
-        if (map[cell.x][cell.y] == 'O')
+        checked[point.x][point.y] = 'v';
+        if (map[point.x][point.y] == 'O')
         {
             return true;
         }
@@ -90,48 +90,48 @@ CheckOneCell(vector<vector<char>> &map, vector<vector<char>> &checked, IndexPair
     }    
 }
 
-void CreatePond(vector<vector<char>> &map, vector<vector<char>> &checked, vector<IndexPair> &pond, IndexPair cell)
+void CreatePond(vector<vector<char>> &map, vector<vector<char>> &checked, vector<Point2i> &pond, Point2i point)
 {
     int height = map.size();
     int width = map[0].size();
     
-    if (CheckOneCell(map, checked, cell))
+    if (CheckPoint(map, checked, point))
     {
-        pond.push_back(cell);
-        if ((cell.x + 1) < height)
+        pond.push_back(point);
+        if ((point.x + 1) < height)
         {
-            CreatePond(map, checked, pond, IndexPair(cell.x + 1, cell.y));
+            CreatePond(map, checked, pond, Point2i(point.x + 1, point.y));
         }
 
-        if ((cell.y + 1) < width)
+        if ((point.y + 1) < width)
         {
-            CreatePond(map, checked, pond, IndexPair(cell.x, cell.y + 1));
+            CreatePond(map, checked, pond, Point2i(point.x, point.y + 1));
         }
 
-        if ((cell.x - 1) >= 0)
+        if ((point.x - 1) >= 0)
         {
-            CreatePond(map, checked, pond, IndexPair(cell.x - 1, cell.y));
+            CreatePond(map, checked, pond, Point2i(point.x - 1, point.y));
         }
         
-        if ((cell.y - 1) >= 0)
+        if ((point.y - 1) >= 0)
         {
-            CreatePond(map, checked, pond, IndexPair(cell.x, cell.y - 1));
+            CreatePond(map, checked, pond, Point2i(point.x, point.y - 1));
         }
     }
 }
 
-vector<vector<IndexPair>>
+vector<vector<Point2i>>
 FindAllPonds(vector<vector<char>> &map, vector<vector<char>> &checked)
 {
-    vector<vector<IndexPair>> ponds;
+    vector<vector<Point2i>> ponds;
     for (int i = 0; i < map.size(); i++)
     {
         for (int j = 0; j < map[0].size(); j++)
         {
             if (map[i][j] == 'O')
             {
-                vector<IndexPair> pond;
-                CreatePond(map, checked, pond, IndexPair(i, j));
+                vector<Point2i> pond;
+                CreatePond(map, checked, pond, Point2i(i, j));
                 if (!pond.empty())
                     ponds.push_back(pond);
             }
@@ -141,7 +141,7 @@ FindAllPonds(vector<vector<char>> &map, vector<vector<char>> &checked)
 }
 
 int
-GetPondSizeAtPoint(vector<vector<IndexPair>> &ponds, IndexPair checkpoint)
+GetPondSizeAtPoint(vector<vector<Point2i>> &ponds, Point2i checkpoint)
 {
     for (auto it = ponds.begin(); it != ponds.end(); it++)
     {
@@ -158,9 +158,9 @@ GetPondSizeAtPoint(vector<vector<IndexPair>> &ponds, IndexPair checkpoint)
 
 int main(int argc, char* argv[]) 
 {
-    vector<IndexPair> checkpoints;
-    vector<vector<char>> map = ReadFile(argv[1], checkpoints);
-    DebugPrint(map);
+    vector<Point2i> checkpoints;
+    vector<vector<char>> map = ReadFromFile(argv[1], checkpoints);
+    PrintMap(map);
 
     vector<vector<char>> checked;
     checked.assign(map.begin(), map.end());
@@ -172,7 +172,7 @@ int main(int argc, char* argv[])
         }
     }
     
-    vector<vector<IndexPair>> ponds = FindAllPonds(map, checked);
+    vector<vector<Point2i>> ponds = FindAllPonds(map, checked);
 
     for (auto it = checkpoints.begin(); it != checkpoints.end(); it++) 
     {
